@@ -1,4 +1,5 @@
 .env
-__pycache__/
 detections/
 detections_log.csv
+__pycache__/
+yolov8n.pt
