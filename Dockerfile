@@ -1,15 +1,21 @@
-# Use the official Python 3.9 image
+# Use a Python base image
 FROM python:3.9
 
 # Set the working directory
 WORKDIR /code
 
-# Copy your requirements and install them
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install them
 COPY ./requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copy all your project files into the container
+# Copy all project files
 COPY . .
 
-# Command to run your Streamlit app
+# Command to start your app
 CMD ["streamlit", "run", "dashboard.py", "--server.port", "7860", "--server.address", "0.0.0.0"]
