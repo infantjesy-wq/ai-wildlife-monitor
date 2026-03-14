@@ -1,0 +1,15 @@
+# Use the official Python 3.9 image
+FROM python:3.9
+
+# Set the working directory
+WORKDIR /code
+
+# Copy your requirements and install them
+COPY ./requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+
+# Copy all your project files into the container
+COPY . .
+
+# Command to run your Streamlit app
+CMD ["streamlit", "run", "dashboard.py", "--server.port", "7860", "--server.address", "0.0.0.0"]

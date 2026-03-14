@@ -1,6 +1,9 @@
 streamlit
-pandas
-pillow
+streamlit-webrtc
 ultralytics
-opencv-python
+opencv-python-headless
+pillow
+numpy
 twilio
+python-dotenv
+av
