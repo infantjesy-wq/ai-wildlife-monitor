@@ -43,27 +43,24 @@ if option == "Image":
     uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        # Show uploaded image
         image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+        st.image(image, caption="Uploaded Image")
 
-        # Convert to numpy
-        img_array = np.array(image)
+        if st.button("🔍 Detect Animals"):
+            img_array = np.array(image)
 
-        # Run detection
-        with st.spinner("Detecting..."):
-            results = model(img_array)
+            with st.spinner("Detecting..."):
+                results = model(img_array)
 
-        # Plot result
-        annotated = results[0].plot()
-        st.image(annotated, caption="Detection Result", use_column_width=True)
+            annotated = results[0].plot()
+            st.image(annotated, caption="Detection Result")
 
-        # ALERT
-        detected = check_alert(results[0])
-        if detected:
-            st.error(f"🚨 ALERT! Animals detected: {', '.join(detected)}")
-        else:
-            st.success("✅ No dangerous animals detected")
+            # ALERT
+            detected = check_alert(results[0])
+            if detected:
+                st.error(f"🚨 ALERT! Animals detected: {', '.join(detected)}")
+            else:
+                st.success("✅ No dangerous animals detected")
 
 # -------------------------------
 # VIDEO UPLOAD
