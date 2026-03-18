@@ -42,13 +42,20 @@ option = st.radio("Choose Input Type:", ["Image", "Video"])
 if option == "Image":
     uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
 
-    if uploaded_file:
+    if uploaded_file is not None:
+        # Show uploaded image
         image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+
+        # Convert to numpy
         img_array = np.array(image)
 
-        results = model(img_array)
-        annotated = results[0].plot()
+        # Run detection
+        with st.spinner("Detecting..."):
+            results = model(img_array)
 
+        # Plot result
+        annotated = results[0].plot()
         st.image(annotated, caption="Detection Result", use_column_width=True)
 
         # ALERT
@@ -57,7 +64,6 @@ if option == "Image":
             st.error(f"🚨 ALERT! Animals detected: {', '.join(detected)}")
         else:
             st.success("✅ No dangerous animals detected")
-
 
 # -------------------------------
 # VIDEO UPLOAD
