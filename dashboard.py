@@ -3,95 +3,82 @@ from ultralytics import YOLO
 import numpy as np
 from PIL import Image
 import cv2
-import tempfile
+import os
+from twilio.rest import Client
 
 # -------------------------------
-# Load Model
+# PAGE
 # -------------------------------
-model = YOLO("yolov8n.pt")
-
-st.title("🦒 AI Wildlife Detection & Alert System")
+st.set_page_config(page_title="Wildlife Detection", layout="centered")
+st.title("🦒 AI Wildlife Detection + WhatsApp Alert")
 
 # -------------------------------
-# Alert function
+# LOAD MODEL (SAFE)
 # -------------------------------
-def check_alert(detections):
-    alert_animals = ["dog", "cat", "cow", "horse", "sheep", "elephant", "bear", "zebra", "giraffe"]
+@st.cache_resource
+def load_model():
+    return YOLO("yolov8n.pt")
 
-    detected_classes = detections.names
+model = load_model()
+
+# -------------------------------
+# TWILIO WHATSAPP CONFIG
+# -------------------------------
+account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+from_whatsapp = "whatsapp:" + os.getenv("TWILIO_PHONE", "")
+to_whatsapp = "whatsapp:" + os.getenv("YOUR_PHONE", "")
+
+def send_whatsapp(msg):
+    if account_sid and auth_token:
+        client = Client(account_sid, auth_token)
+        client.messages.create(
+            body=msg,
+            from_=from_whatsapp,
+            to=to_whatsapp
+        )
+
+# -------------------------------
+# ALERT LOGIC
+# -------------------------------
+def check_alert(results):
+    alert_animals = ["dog", "cat", "cow", "horse", "sheep", "elephant", "bear"]
+
+    names = results.names
     found = []
 
-    for box in detections.boxes:
+    for box in results.boxes:
         cls_id = int(box.cls[0])
-        class_name = detected_classes[cls_id]
-        if class_name in alert_animals:
-            found.append(class_name)
+        label = names[cls_id]
+        if label in alert_animals:
+            found.append(label)
 
     return list(set(found))
-
-
-# -------------------------------
-# Select Input
-# -------------------------------
-option = st.radio("Choose Input Type:", ["Image", "Video"])
-
 
 # -------------------------------
 # IMAGE UPLOAD
 # -------------------------------
-if option == "Image":
-    uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image")
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image")
 
-        if st.button("🔍 Detect Animals"):
-            img_array = np.array(image)
+    if st.button("🔍 Detect"):
+        img = np.array(image)
+        img = cv2.resize(img, (640, 480))
 
-            with st.spinner("Detecting..."):
-                results = model(img_array)
+        with st.spinner("Detecting..."):
+            results = model(img)
 
-            annotated = results[0].plot()
-            st.image(annotated, caption="Detection Result")
+        result_img = results[0].plot()
+        st.image(result_img, caption="Detection Result")
 
-            # ALERT
-            detected = check_alert(results[0])
-            if detected:
-                st.error(f"🚨 ALERT! Animals detected: {', '.join(detected)}")
-            else:
-                st.success("✅ No dangerous animals detected")
+        detected = check_alert(results[0])
 
-# -------------------------------
-# VIDEO UPLOAD
-# -------------------------------
-elif option == "Video":
-    uploaded_video = st.file_uploader("Upload a Video", type=["mp4", "mov", "avi"])
-
-    if uploaded_video:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_video.read())
-
-        cap = cv2.VideoCapture(tfile.name)
-
-        stframe = st.empty()
-        alert_box = st.empty()
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            results = model(frame)
-            annotated_frame = results[0].plot()
-
-            stframe.image(annotated_frame, channels="BGR")
-
-            # ALERT
-            detected = check_alert(results[0])
-            if detected:
-                alert_box.error(f"🚨 ALERT! Animals detected: {', '.join(detected)}")
-            else:
-                alert_box.success("✅ Safe")
-
-        cap.release()
+        if detected:
+            msg = f"🚨 ALERT! Animals detected: {', '.join(detected)}"
+            st.error(msg)
+            send_whatsapp(msg)
+        else:
+            st.success("✅ No animals detected")
