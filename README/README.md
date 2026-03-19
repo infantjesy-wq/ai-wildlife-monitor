@@ -63,6 +63,9 @@ streamlit run app.py
 👉 https://ai-wildlife-monitor.streamlit.app/
 
 ---
+## 📷 Project Screenshot
+
+![App Screenshot](animal_output.jpg)
 
 ## 📸 How It Works
 
